@@ -21,28 +21,25 @@ class Database {
             # define connection
             $conn = $this->connection;
 
+            # basic switchusage
+            $type = $_POST["type"];
+            $id = $conn->query("SELECT * FROM $type")->num_rows;
+            $sql = "";
+
             # compute data
-            $sql="";
-            switch($_POST["type"]){
+            switch($type){
                 case "profile":
                     $first = $_POST["first"];
                     $last = $_POST["last"];
-    
-                    $code=<<<XML
-                    <profile>
-                        <first>$first</first>
-                        <last>$last</last>
-                    </profile>
-                    XML;
-                    $sql="INSERT INTO user (content) VALUES ($code);";
+                    $sql = "INSERT INTO $type (id, firstname, lastname) VALUES ($id, '$first', '$last');";
                 break;
             }
 
-            # add data
-            if ($conn->query($sql) === TRUE){
-                echo "New record created successfully";
+            # if query successful
+            if($conn->query($sql)){
+                $conn->query("INSERT INTO templates (name, id) VALUES ('$type', $id);");
             }else{
-                echo "Error: ".$sql."<br>".$conn->error;
+                echo "Error: ".$conn->error;
             }
         }
     }
@@ -51,16 +48,44 @@ class Database {
         $conn = $this->connection;
 
         # read database
-        $sql = "SELECT * FROM user";
+        $sql = "SELECT * FROM templates";
         $result = $conn->query($sql);
 
         # render database
         if($result->num_rows > 0){
             while($row = $result->fetch_assoc()){
-                echo "id: ".$row["firstname"];
+
+                $template = $row["name"];
+                $id = $row["id"];
+
+                # get 
+                $data = $conn->query("SELECT * FROM $template WHERE id=$id")->fetch_assoc();
+                switch($template){
+                    case "profile":
+                        $first = $data["firstname"];
+                        $last = $data["lastname"];
+                    ?>
+                        <div class="profile">
+                            <div class="avatar">
+                                <img src="./images/go_green.png" width="50">
+                            </div>
+                            <h1>Profile</h1>
+                            <div>
+                                <div>
+                                    <?php echo $first; ?>
+                                </div>
+                                <div>
+                                    <?php echo $last; ?>
+                                </div>
+                            </div>
+                        </div>
+                    <?php
+                    break;
+                }
             }
         }else{
             echo "0 results";
         }
     }
 }
+?>
